@@ -1,0 +1,33 @@
+version: "3.8"
+
+services:
+  app:
+    build: . # Builds the Node.js app using the Dockerfile
+    ports:
+      - "5000:5000" # Access the app at http://localhost:5000
+    depends_on:
+      mongo:
+        condition: service_healthy # Runs MongoDB first and waits for MongoDB to be healthy
+    env_file:
+      - .env # env file
+    environment: # Optional: good for future expansions
+      - NODE_ENV=DEVELOPMENT
+    volumes:
+      - .:/app              # mount local code into container
+      - /app/node_modules   # prevent overwrite
+
+  mongo:
+    image: mongo:latest # Official MongoDB image
+    ports:
+      - "27017:27017" # Optional: allows direct access from host (e.g., MongoDB Compass)
+    volumes:
+      - mongo-data:/data/db # Persists database data across restarts
+    healthcheck: # healthcheck
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s # Gives MongoDB time to start up initially
+
+volumes:
+  mongo-data: # Named volume for MongoDB persistence
