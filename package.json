@@ -1,0 +1,32 @@
+{
+  "name": "nodejs-mongodb-docker",
+  "version": "1.0.0",
+  "description": "A simple Node.js and MongoDB project using Docker and Docker Compose.  \r This project demonstrates how a Node.js application connects to a MongoDB container using Docker networking and how MongoDB data is persisted using Docker volumes.",
+  "main": "index.js",
+  "scripts": {
+    "start": "set NODE_ENV=DEVELOPMENT&&nodemon src/server.js",
+    "dev": "set NODE_ENV=DEVELOPMENT&&nodemon src/server.js",
+    "prod": "set NODE_ENV=PRODUCTION&&nodemon src/server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "compression": "^1.8.1",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "express-useragent": "^2.0.2",
+    "express-validator": "^7.3.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.1.1",
+    "morgan": "^1.10.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  }
+}
