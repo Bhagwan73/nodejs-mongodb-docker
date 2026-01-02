@@ -11,6 +11,22 @@ const { generateToken } = require("../utils/jwt");
 exports.registration = async (req, res) => {
   const { firstName, lastName, email, password, phone } = req.body;
 
+  // check if account exists 
+  const isUserExist = await getUserByFilter(
+    {
+      $or: [{ email }, { phone }],
+    },
+    "_id",
+    { lean: true }
+  );
+
+  if (isUserExist) {
+    throw new AppError(
+      400,
+      "An account with this email or phone already exists."
+    );
+  }
+  
   // generate jwt token
   const token = generateToken({ email });
   if (token.error) {
