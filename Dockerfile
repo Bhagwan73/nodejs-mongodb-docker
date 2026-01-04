@@ -1,20 +1,34 @@
-# Use official Node.js image
+# =========================
+# 1️] BUILD STAGE
+# =========================
+FROM node:20-alpine3.21 AS builder
+
+# Create app directory
+WORKDIR /server
+
+# Copy dependency files first (better caching)
+COPY package*.json ./
+
+# Install ALL dependencies
+RUN npm install
+
+# Copy application source code
+COPY . .
+
+
+# =========================
+# 2️] RUNTIME STAGE
+# =========================
 FROM node:20-alpine3.21
 
 # Create app directory
 WORKDIR /server
 
-# Copy package.json and package-lock.json
-COPY package*.json ./
+# Copy ONLY what is needed from builder
+COPY --from=builder /server /server
 
-# Install dependencies
-RUN npm install 
-
-# Copy the rest of the code
-COPY . .
-
-# Expose the port the app runs on
+# Expose app port
 EXPOSE 5000
 
-# Run the app
-CMD ["npm", "run","prod"]
+# Run app in production
+CMD ["npm", "run", "prod"]
