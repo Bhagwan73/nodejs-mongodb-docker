@@ -1,35 +1,88 @@
-
 services:
+  # Node.js Application Service
   app:
-    build:  # Builds the Node.js app using the Dockerfile and if you want to pull from hub then remove build section
+    image: bhagwan73/my-node-app:latest
+    build:
       context: .
       dockerfile: Dockerfile
-    image: bhagwansn/nodejs-mongodb-docker-app:latest 
-    ports:
-      - "5000:5000" # Access the app at http://localhost:5000
+    container_name: app
+    expose:
+      - "5000" # Only internal exposure - accessed via Nginx
     depends_on:
       mongo:
-        condition: service_healthy # Runs MongoDB first and waits for MongoDB to be healthy
+        condition: service_healthy
     env_file:
       - .env # env file
-    environment: # Optional: good for future expansions
-      - NODE_ENV=DEVELOPMENT
-    volumes:
-      - .:/app              # mount local code into container
-      - /app/node_modules   # prevent overwrite
+    environment:
+      - NODE_ENV=PRODUCTION # Force production mode
+    networks:
+      - node-app-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
 
+  # MongoDB Service (Secure Production Setup)
   mongo:
-    image: mongo:latest # Official MongoDB image
+    image: mongo:8.2.3 # Pinned version for stability and security updates
+    container_name: mongo
     ports:
-      - "27017:27017" # Optional: allows direct access from host (e.g., MongoDB Compass)
+      - "27018:27017"
     volumes:
-      - mongo-data:/data/db # Persists database data across restarts
-    healthcheck: # healthcheck
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      - mongo-data:/data/db
+    env_file:
+      - .env
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_DB_NAME}
+    healthcheck:
+      test: >
+        mongosh -u ${MONGO_ROOT_USER} -p ${MONGO_ROOT_PASSWORD}
+        --authenticationDatabase admin
+        --eval "db.runCommand({ ping: 1 })" --quiet
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 10s # Gives MongoDB time to start up initially
+      retries: 10
+      start_period: 30s
+    networks:
+      - node-app-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
 
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    ports:
+      - "80:80"
+      - "443:443" # Ready for HTTPS (add cert volumes when needed)
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      # - ./certs:/etc/nginx/certs:ro        # Uncomment when adding SSL
+    depends_on:
+      - app
+    networks:
+      - node-app-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+# Persistent Data
 volumes:
-  mongo-data: # Named volume for MongoDB persistence
+  mongo-data:
+
+# Isolated Network
+networks:
+  node-app-network:
+    driver: bridge
+    name: node-app-network
